@@ -203,6 +203,7 @@ class AsrEngine:
             vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 400},
             condition_on_previous_text=False,
+            word_timestamps=True,      # 有逐词时间，字幕才能真正对齐说话时刻
         )
         total = duration or getattr(info, "duration", 0) or 0
         raw: list[Cue] = []
@@ -211,20 +212,127 @@ class AsrEngine:
                 raise AsrError("已停止")
             text = clean_text(seg.text or "")
             if text:
-                raw.append(Cue(float(seg.start), float(seg.end), text))
+                pieces = _cues_from_segment(seg, text)
+                raw.extend(pieces)
             if progress and total:
                 progress(min(0.999, float(seg.end) / total))
         self.log(f"语音识别完成，共 {len(raw)} 段")
-        return _normalize(raw)
+        cues = _trim_to_audio(_normalize(raw), samples)
+        return _fix_overlaps(cues)
+
+
+def _frame_energy(samples, sr: int = 16000, win: float = 0.02):
+    """按 20ms 窗算 RMS，用来判断“这一刻到底有没有人在说话”。"""
+    import numpy as np
+
+    step = max(1, int(sr * win))
+    n = len(samples) // step
+    if n <= 0:
+        return np.zeros(0, dtype="float32"), win
+    frames = samples[: n * step].astype("float32").reshape(n, step)
+    return np.sqrt((frames ** 2).mean(axis=1)), win
+
+
+def _trim_to_audio(cues: list[Cue], samples, sr: int = 16000) -> list[Cue]:
+    """用音频能量把字幕的头尾再收紧：不提前显示、不拖到说完后的停顿里。"""
+    energy, win = _frame_energy(samples, sr)
+    if len(cues) == 0 or len(energy) == 0:
+        return cues
+    import numpy as np
+
+    # 噪声底噪取 20 分位，阈值取底噪的 4 倍（至少 0.008）
+    floor = float(np.percentile(energy, 20))
+    threshold = max(0.008, floor * 4.0)
+    voiced = energy > threshold
+
+    for cue in cues:
+        i0 = max(0, int(cue.start / win))
+        i1 = min(len(voiced), int(cue.end / win))
+        if i1 <= i0:
+            continue
+        seg = voiced[i0:i1]
+        idx = np.flatnonzero(seg)
+        if len(idx) == 0:
+            continue
+        first, last = i0 + int(idx[0]), i0 + int(idx[-1])
+        # 起点：第一个有声窗往前留 0.05 秒；终点：最后一个有声窗往后留 0.12 秒
+        new_start = max(0.0, first * win - 0.05)
+        new_end = (last + 1) * win + 0.12
+        if new_end - new_start >= 0.6:
+            cue.start = round(new_start, 3)
+            cue.end = round(new_end, 3)
+    return cues
+
+
+# 字幕时间轴：起点提前一点点，终点多留一点点，但都不拖泥带水
+_LEAD = 0.06          # 字幕比第一个词早 0.06 秒出现
+_TAIL = 0.15          # 最后一个词说完后再留 0.15 秒
+_MIN_DUR = 0.9        # 单条最短显示时间
+_MAX_DUR = 6.5        # 单条最长显示时间
+
+
+def _cues_from_segment(seg, text: str) -> list[Cue]:
+    """按逐词时间把识别结果切成字幕，而不是把整段时长按字数均分。"""
+    words = [w for w in getattr(seg, "words", None) or [] if (w.word or "").strip()]
+    if not words:
+        # 没有词级时间（极少见）时退回按比例切分，至少别丢内容
+        return _split_cue(Cue(float(seg.start), float(seg.end), text))
+
+    groups: list[list] = []
+    cur: list = []
+    cur_chars = 0
+    for w in words:
+        token = (w.word or "").strip()
+        if not token:
+            continue
+        gap = float(w.start) - float(cur[-1].end) if cur else 0.0
+        dur = float(w.end) - float(cur[0].start) if cur else 0.0
+        if cur and (
+            cur_chars + len(token) + 1 > 42
+            or dur > _MAX_DUR
+            or gap > 0.6
+            or (token.endswith((".", "!", "?")) and cur_chars >= 18)
+        ):
+            groups.append(cur)
+            cur, cur_chars = [], 0
+        cur.append(w)
+        cur_chars += len(token) + (1 if cur_chars else 0)
+    if cur:
+        groups.append(cur)
+
+    cues: list[Cue] = []
+    for group in groups:
+        start = max(0.0, float(group[0].start) - _LEAD)
+        end = float(group[-1].end) + _TAIL
+        if end - start < _MIN_DUR:
+            end = start + _MIN_DUR
+        if end - start > _MAX_DUR + 0.5:
+            end = start + _MAX_DUR + 0.5
+        line = " ".join((w.word or "").strip() for w in group)
+        line = re.sub(r"\s+", " ", line).strip()
+        if line:
+            cues.append(Cue(start, end, line))
+    return cues or _split_cue(Cue(float(seg.start), float(seg.end), text))
 
 
 def _normalize(cues: list[Cue]) -> list[Cue]:
-    """把过长的识别段落切成适合字幕的长度，并合并过碎的行。"""
-    out: list[Cue] = []
+    """合并过碎的短句，并消掉时间轴重叠（字幕不会前一条还没走、后一条已经来）。"""
+    return _fix_overlaps(_merge_tiny(cues))
+
+
+def _fix_overlaps(cues: list[Cue]) -> list[Cue]:
+    fixed: list[Cue] = []
     for cue in cues:
-        pieces = _split_cue(cue)
-        out.extend(pieces)
-    return _merge_tiny(out)
+        if fixed and cue.start < fixed[-1].end:
+            prev = fixed[-1]
+            if prev.start + 0.55 <= cue.start - 0.02:
+                prev.end = cue.start - 0.02
+            else:
+                cue.start = prev.end + 0.02
+        if cue.end - cue.start < 0.5:
+            cue.end = cue.start + 0.5
+        fixed.append(cue)
+    return fixed
 
 
 def _split_cue(cue: Cue, max_chars: int = 84, max_duration: float = 8.0) -> list[Cue]:
@@ -284,14 +392,14 @@ def _read_pcm16(wav: Path):
     return np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
 
 
-def _merge_tiny(cues: list[Cue], max_chars: int = 84, max_gap: float = 0.08) -> list[Cue]:
+def _merge_tiny(cues: list[Cue], max_chars: int = 54, max_gap: float = 0.06) -> list[Cue]:
     merged: list[Cue] = []
     for cue in cues:
         if (
             merged
             and cue.start - merged[-1].end <= max_gap
             and len(merged[-1].text) + len(cue.text) + 1 <= max_chars
-            and cue.end - merged[-1].start <= 10
+            and cue.end - merged[-1].start <= 7.0
         ):
             prev = merged[-1]
             prev.text = f"{prev.text} {cue.text}".strip()

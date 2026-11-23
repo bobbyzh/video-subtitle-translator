@@ -9,6 +9,9 @@ Batch-generate Chinese subtitles for your videos: **pull embedded English subtit
 ## Features
 
 - **Automatic subtitle source**: reads the embedded English subtitle track first (srt / ass / mov_text); when there is none it falls back to faster-whisper ASR (tiny / base / small / medium).
+  Recognised lines are split on **word-level timestamps** and then tightened against the audio energy
+  (appear 0.06 s before the first word, disappear 0.15 s after the last one), so subtitles neither pop
+  up early nor hang over the silence; neighbouring cues never overlap and a cue is at most ~6.5 s long.
 - **Two translation channels**: online (Google + MyMemory, no API key) or a local LLM (Tencent Hunyuan Hy-MT2-1.8B / Hunyuan-MT-7B via llama.cpp + GGUF, runs on CPU alone). The `auto` mode tries local first and falls back to online.
 - **Bilingual output**: SRT (two tracks with identical timing — maximum compatibility) or ASS (configurable font, size, colour, outline, position; requires libass rendering).
 - **Subtitle styling**: dedicated dialog with a live dark preview; separate size/colour for Chinese and English, bold, outline, top/bottom placement; sizes scale with video resolution.
