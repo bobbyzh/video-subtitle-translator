@@ -1,0 +1,6 @@
+# Windows 自带 Python 之外，本程序便携运行时需要：
+faster-whisper>=1.2.0
+tkinterdnd2>=0.4.0
+
+# faster-whisper 会自带安装 ctranslate2、onnxruntime、av、tokenizers 等
+# ffmpeg / ffprobe 由 install.ps1 下载到 bin 目录

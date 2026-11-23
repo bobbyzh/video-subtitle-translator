@@ -1,0 +1,23 @@
+# 运行时与体积大的资源（自行安装/下载，不入库）
+/runtime/
+/bin/
+/models/
+/dist/
+/build/
+/testdata/
+/data/
+*.spec.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
