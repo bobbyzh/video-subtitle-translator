@@ -94,7 +94,7 @@ def _cli(argv: list[str]) -> int:
             log(f"异常：{video.name}\n{traceback.format_exc()}")
             continue
         if out.ok:
-            target = out.srt_path or out.video_path
+            target = out.srt_path or out.bilingual_path or out.video_path
             log(f"完成：{video.name} → {target}")
         else:
             failed += 1
