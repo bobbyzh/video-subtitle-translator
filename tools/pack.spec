@@ -5,7 +5,7 @@
     runtime\python\python.exe -m PyInstaller --noconfirm --clean tools\pack.spec
 
 产物在 dist\视频字幕工具\：
-    视频字幕工具.exe        ← 双击即可
+    VideoSubtitleTool.exe   ← 双击即可
     _internal\              ← Python 运行时与依赖（不用管）
 之后由 tools\build_exe.py 把 bin\、models\、data\ 复制到同一目录。
 """
@@ -72,7 +72,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="视频字幕工具",
+    name="VideoSubtitleTool",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

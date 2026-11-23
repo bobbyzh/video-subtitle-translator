@@ -2,7 +2,7 @@
 
 两种用法：
     · 直接运行                              → 打开图形界面；
-    · 视频字幕工具.exe <视频路径> 或 --file <视频路径>
+    · VideoSubtitleTool.exe <视频路径> 或 --file <视频路径>
       → 不开界面，按 data\\config.json 的设置处理指定文件（方便写批处理、跑测试），
         另有 --no-translate（只提取不翻译）、--burn（强制烧硬字幕）两个开关。
 """
@@ -38,7 +38,7 @@ def _cli(argv: list[str]) -> int:
     flags = [a for a in argv if a.startswith("-")]
     files = [a for a in argv if not a.startswith("-")]
     if not files:
-        print("用法：视频字幕工具.exe <视频路径> [--no-translate] [--burn]")
+        print("用法：VideoSubtitleTool.exe <视频路径> [--no-translate] [--burn]")
         return 2
 
     cfg = load_config()

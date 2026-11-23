@@ -2,7 +2,7 @@
 
 用法：
     runtime\\python\\python.exe tools\\build_exe.py
-产物：dist\\视频字幕工具\\视频字幕工具.exe（同目录还有 bin\\、models\\、data\\）
+产物：dist\\视频字幕工具\\VideoSubtitleTool.exe（同目录还有 bin\\、models\\、data\\）
 """
 
 from __future__ import annotations
@@ -70,9 +70,9 @@ def main() -> int:
     readme = DIST / "使用说明.txt"
     readme.write_text(
         "视频字幕工具（免安装版）\n\n"
-        "双击「视频字幕工具.exe」即可运行，不需要装 Python。\n\n"
+        "双击「VideoSubtitleTool.exe」即可运行，不需要装 Python。\n\n"
         "目录说明：\n"
-        "  视频字幕工具.exe   主程序\n"
+        "  VideoSubtitleTool.exe   主程序\n"
         "  _internal\\          程序运行库，别删也别动\n"
         "  bin\\                ffmpeg / ffprobe / llama.cpp（离线识别与翻译、硬字幕都靠它）\n"
         "  models\\             离线模型：hy-mt2\\ 是 1.8B 翻译模型，hy-mt2-7b\\ 是 7B（可选），\n"
@@ -85,7 +85,7 @@ def main() -> int:
 
     size = sum(f.stat().st_size for f in DIST.rglob("*") if f.is_file())
     print(f"== 3/3 完成：{DIST}（共 {size / 1024 ** 3:.2f} GB）")
-    print(f"   主程序：{DIST / '视频字幕工具.exe'}")
+    print(f"   主程序：{DIST / 'VideoSubtitleTool.exe'}")
     return 0
 
 
