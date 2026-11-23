@@ -135,7 +135,7 @@ On a machine with a discrete GPU the 7B tier drops to roughly 0.2–0.4 s per li
 python tools\build_exe.py
 ```
 
-Output lands in `dist\视频字幕工具\`: `VideoSubtitleTool.exe` + `_internal\` (Python runtime) + `bin\` + `models\` + `data\`. The whole folder is portable to any 64-bit Win10/11 machine. PyInstaller `--onedir` is used instead of one-file: the models are ~6 GB, and a one-file build would unpack to a temp folder on every launch.
+Output lands in `dist\VideoSubtitleTool\`: `VideoSubtitleTool.exe` + `_internal\` (Python runtime) + `bin\` + `models\` + `data\`. The whole folder is portable to any 64-bit Win10/11 machine. PyInstaller `--onedir` is used instead of one-file: the models are ~6 GB, and a one-file build would unpack to a temp folder on every launch.
 
 ## FAQ
 

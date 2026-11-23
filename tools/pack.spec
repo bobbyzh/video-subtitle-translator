@@ -4,7 +4,7 @@
 用法（在项目根目录）：
     runtime\python\python.exe -m PyInstaller --noconfirm --clean tools\pack.spec
 
-产物在 dist\视频字幕工具\：
+产物在 dist\VideoSubtitleTool\：
     VideoSubtitleTool.exe   ← 双击即可
     _internal\              ← Python 运行时与依赖（不用管）
 之后由 tools\build_exe.py 把 bin\、models\、data\ 复制到同一目录。
@@ -87,5 +87,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=False,
-    name="视频字幕工具",
+    name="VideoSubtitleTool",
 )

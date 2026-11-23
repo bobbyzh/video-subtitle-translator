@@ -2,7 +2,7 @@
 
 用法：
     runtime\\python\\python.exe tools\\build_exe.py
-产物：dist\\视频字幕工具\\VideoSubtitleTool.exe（同目录还有 bin\\、models\\、data\\）
+产物：dist\\VideoSubtitleTool\\VideoSubtitleTool.exe（同目录还有 bin\\、models\\、data\\）
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DIST = ROOT / "dist" / "视频字幕工具"
+DIST = ROOT / "dist" / "VideoSubtitleTool"
 HF_CACHE = ROOT / "models" / "faster-whisper-small"
 
 

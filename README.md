@@ -137,7 +137,7 @@ subtitles\
 python tools\build_exe.py
 ```
 
-产物在 `dist\视频字幕工具\`：`VideoSubtitleTool.exe` + `_internal\`（Python 运行时）+ `bin\` + `models\` + `data\`，整个文件夹可直接拷到别的 64 位 Win10/11 使用。采用 PyInstaller `--onedir` 而非单文件——模型有 6GB，单文件每次启动都要解包到临时目录。
+产物在 `dist\VideoSubtitleTool\`：`VideoSubtitleTool.exe` + `_internal\`（Python 运行时）+ `bin\` + `models\` + `data\`，整个文件夹可直接拷到别的 64 位 Win10/11 使用。采用 PyInstaller `--onedir` 而非单文件——模型有 6GB，单文件每次启动都要解包到临时目录。
 
 ## 常见问题
 
